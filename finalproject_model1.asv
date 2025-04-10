@@ -4,25 +4,22 @@ clc;
 
 % Parameters
 PLA_den = 1240 ;         %PLA density kg/m3
+m_s = 1;                 % Mass of each side link (kg) 0.00124g/mm3 for PLA * vol
+m_t = 1;                 % Mass of the top link (kg)
 S = 0.05;                   % Length of each side link (m)
 T = 0.085;                   % Length of the top link (m)
-w_s =  0.005                %width side
-w_t =  0.0102               %width top
-m_s = PLA_den*w_s*S;                 % Mass of each side link (kg) 0.00124g/mm3 for PLA * vol
-m_t = PLA_den*w_t*T;                 % Mass of the top link (kg)
-k1 = 10;                % Spring 1 stiffness (N/m)
-k2 = 10;                % Spring 2 stiffness (N/m)
-l1_o = 0.03;              % Rest length of spring 1 (m)
-l2_o = 0.03;              % Rest length of spring 2 (m)
-a = 0.025;                   % Distance from bottom-left pivot to spring 1 attachment (m)
-b = 0.025;                   % Distance from bottom-right pivot to spring 2 attachment (m)
+k1 = 100;                % Spring 1 stiffness (N/m)
+k2 = 100;                % Spring 2 stiffness (N/m)
+l1_o = 1.5;              % Rest length of spring 1 (m)
+l2_o = 1.5;              % Rest length of spring 2 (m)
+a = 1;                   % Distance from bottom-left pivot to spring 1 attachment (m)
+b = 1;                   % Distance from bottom-right pivot to spring 2 attachment (m)
+Q1 = 0.5;                % Spring 1 bottom attachment point (m)
+Q2 = 0.5;                % Spring 2 bottom attachment point (m)
 D = 2;                   % Distance between pivots (m)
-Q1 = -0.05;                % Spring 1 bottom attachment point (m)
-Q2 = D + 0.05;                % Spring 2 bottom attachment point (m)
 
 % Define the applied torque (for example, sinusoidal)
-%tau = @(theta) 10 * sin(theta);  % Example applied torque
-tau = @(theta) 10 * 0.01;  % Example applied torque
+tau = @(theta) 10 * sin(theta);  % Example applied torque
 
 % Initial conditions
 theta0 = 0;              % Initial angle (rad)
