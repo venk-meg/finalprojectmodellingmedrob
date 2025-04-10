@@ -21,9 +21,9 @@ Q1 = -0.05;            % Spring 1 bottom attachment point (m)
 Q2 = D + 0.05;         % Spring 2 bottom attachment point (m)
 
 % Define the applied torque (smooth increase/decrease with theta)
-tau = @(theta) 0.1 * sin(theta);  % Example applied torque (smooth)
+tau = @(theta) 0.0 * sin(theta);  % Example applied torque (smooth)
 
-% Initial conditions
+% Initial conditions (start from rest)
 theta0 = 0;             % Initial angle (rad)
 theta_dot0 = 0;         % Initial angular velocity (rad/s)
 initial_conditions = [theta0; theta_dot0];
@@ -52,7 +52,7 @@ function dydt = system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2,
     dl1_dtheta = (a * cos(theta1) + Q1) / l1;
     dl2_dtheta = ((Q2 - T) + b * cos(theta1)) / l2;
     
-    % Spring forces
+    % Spring forces (passive forces, only reacting to displacement)
     spring_force_1 = k1 * (l1 - l1_o) * dl1_dtheta;
     spring_force_2 = k2 * (l2 - l2_o) * dl2_dtheta;
     
@@ -96,7 +96,7 @@ h_spring1 = plot([0, 0], [0, 0], 'b--'); % Spring 1 -> between a and A
 h_spring2 = plot([D, D], [0, 0], 'r--'); % Spring 2 -> between b and B
 
 % Plot the torque indication as an arrow (optional)
-h_torque_arrow = quiver(0, 0, 0.03, 0, 'MaxHeadSize', 3, 'LineWidth', 2, 'Color', 'm', 'AutoScale', 'off');  % Torque direction (arrow)
+h_torque_text = text(0.1, 0.18, '', 'FontSize', 12, 'Color', 'm');  % Placeholder text for torque
 
 % Loop for animation
 for i = 1:length(t)
@@ -129,8 +129,10 @@ for i = 1:length(t)
     % Update torque arrow (optional)
     torque = tau(theta1);  % Get current torque value
     torque_magnitude = 0.03 * torque;  % Adjust the torque magnitude for visualization
-    set(h_torque_arrow, 'XData', 0, 'YData', 0, 'UData', torque_magnitude, 'VData', 0);  % Adjust torque arrow position
+    % Update torque value text
+    torque = tau(theta1);  % Get current torque value
+    set(h_torque_text, 'String', ['Torque: ' num2str(torque, '%.2f') ' N.m']);  % Update torque value displayed
     
     % Pause for animation effect (slower simulation)
-    pause(0.1);  % Slower animation, adjust this for desired speed
+    pause(0.1);  % Slower
 end
