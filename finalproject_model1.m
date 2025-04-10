@@ -16,12 +16,12 @@ l1_o = 0.03;           % Rest length of spring 1 (m)
 l2_o = 0.03;           % Rest length of spring 2 (m)
 a = 0.025;             % Distance from bottom-left pivot to spring 1 attachment (m)
 b = 0.025;             % Distance from bottom-right pivot to spring 2 attachment (m)
-D = 0.085;                 % Distance between pivots (m)
+D = 0.085;             % Distance between pivots (m)
 Q1 = -0.05;            % Spring 1 bottom attachment point (m)
 Q2 = D + 0.05;         % Spring 2 bottom attachment point (m)
 
-% Define the applied torque (for example, constant torque)
-tau = @(theta) 10 * -0.1;  % Example applied torque
+% Define the applied torque (smooth increase/decrease with theta)
+tau = @(theta) 0.1 * sin(theta);  % Example applied torque (smooth)
 
 % Initial conditions
 theta0 = 0;             % Initial angle (rad)
@@ -92,8 +92,11 @@ h_left_pivot = plot(0, 0, 'ko', 'MarkerFaceColor', 'k'); % Left pivot
 h_right_pivot = plot(D, 0, 'ko', 'MarkerFaceColor', 'k'); % Right pivot
 
 % Add spring lines (optional, for visualization)
-h_spring1 = plot([0, 0], [0, 0], 'b--'); % Spring 1
-h_spring2 = plot([D, D], [0, 0], 'r--'); % Spring 2
+h_spring1 = plot([0, 0], [0, 0], 'b--'); % Spring 1 -> between a and A
+h_spring2 = plot([D, D], [0, 0], 'r--'); % Spring 2 -> between b and B
+
+% Plot the torque indication as an arrow (optional)
+h_torque_arrow = quiver(0, 0, 0.03, 0, 'MaxHeadSize', 3, 'LineWidth', 2, 'Color', 'm', 'AutoScale', 'off');  % Torque direction (arrow)
 
 % Loop for animation
 for i = 1:length(t)
@@ -107,14 +110,26 @@ for i = 1:length(t)
     B_x = D - S * cos(theta1);  % Position of point B (right side link end)
     B_y = S * sin(theta1);
     
+    % Calculate spring attachment points a and b
+    a_x = -a * cos(theta1);  % Position of spring attachment point a
+    a_y = a * sin(theta1);  % Position of spring attachment point a
+    
+    b_x = D - b * cos(theta1);  % Position of spring attachment point b
+    b_y = b * sin(theta1);      % Position of spring attachment point b
+    
     % Update the positions of the links
     set(h_side_left, 'XData', [0, A_x], 'YData', [0, A_y]);
     set(h_side_right, 'XData', [D, B_x], 'YData', [0, B_y]);
     set(h_top, 'XData', [A_x, B_x], 'YData', [A_y, B_y]);
     
-    % Update spring positions (optional for visualization)
-    set(h_spring1, 'XData', [0, A_x], 'YData', [0, A_y]);
-    set(h_spring2, 'XData', [D, B_x], 'YData', [0, B_y]);
+    % Update spring positions (for visualization)
+    set(h_spring1, 'XData', [Q1, a_x], 'YData', [0, a_y]);  % Update Spring 1 -> between Q1 and a
+    set(h_spring2, 'XData', [Q2, b_x], 'YData', [0, b_y]);  % Update Spring 2 -> between Q2 and b
+    
+    % Update torque arrow (optional)
+    torque = tau(theta1);  % Get current torque value
+    torque_magnitude = 0.03 * torque;  % Adjust the torque magnitude for visualization
+    set(h_torque_arrow, 'XData', 0, 'YData', 0, 'UData', torque_magnitude, 'VData', 0);  % Adjust torque arrow position
     
     % Pause for animation effect (slower simulation)
     pause(0.1);  % Slower animation, adjust this for desired speed
