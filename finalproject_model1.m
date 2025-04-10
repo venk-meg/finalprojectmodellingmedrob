@@ -3,34 +3,33 @@ clear;
 clc;
 
 % Parameters
-PLA_den = 1240 ;         %PLA density kg/m3
-S = 0.05;                   % Length of each side link (m)
-T = 0.085;                   % Length of the top link (m)
-w_s =  0.005                %width side
-w_t =  0.0102               %width top
-m_s = PLA_den*w_s*S;                 % Mass of each side link (kg) 0.00124g/mm3 for PLA * vol
-m_t = PLA_den*w_t*T;                 % Mass of the top link (kg)
-k1 = 10;                % Spring 1 stiffness (N/m)
-k2 = 10;                % Spring 2 stiffness (N/m)
-l1_o = 0.03;              % Rest length of spring 1 (m)
-l2_o = 0.03;              % Rest length of spring 2 (m)
-a = 0.025;                   % Distance from bottom-left pivot to spring 1 attachment (m)
-b = 0.025;                   % Distance from bottom-right pivot to spring 2 attachment (m)
-D = 2;                   % Distance between pivots (m)
-Q1 = -0.05;                % Spring 1 bottom attachment point (m)
-Q2 = D + 0.05;                % Spring 2 bottom attachment point (m)
+PLA_den = 1240;         % PLA density kg/m3
+S = 0.05;              % Length of each side link (m)
+T = 0.085;             % Length of the top link (m)
+w_s =  0.005;          % width side
+w_t =  0.0102;         % width top
+m_s = PLA_den * w_s * S;   % Mass of each side link (kg)
+m_t = PLA_den * w_t * T;   % Mass of the top link (kg)
+k1 = 10;               % Spring 1 stiffness (N/m)
+k2 = 10;               % Spring 2 stiffness (N/m)
+l1_o = 0.03;           % Rest length of spring 1 (m)
+l2_o = 0.03;           % Rest length of spring 2 (m)
+a = 0.025;             % Distance from bottom-left pivot to spring 1 attachment (m)
+b = 0.025;             % Distance from bottom-right pivot to spring 2 attachment (m)
+D = 0.085;                 % Distance between pivots (m)
+Q1 = -0.05;            % Spring 1 bottom attachment point (m)
+Q2 = D + 0.05;         % Spring 2 bottom attachment point (m)
 
-% Define the applied torque (for example, sinusoidal)
-%tau = @(theta) 10 * sin(theta);  % Example applied torque
-tau = @(theta) 10 * 0.01;  % Example applied torque
+% Define the applied torque (for example, constant torque)
+tau = @(theta) 10 * -0.1;  % Example applied torque
 
 % Initial conditions
-theta0 = 0;              % Initial angle (rad)
-theta_dot0 = 0;          % Initial angular velocity (rad/s)
+theta0 = 0;             % Initial angle (rad)
+theta_dot0 = 0;         % Initial angular velocity (rad/s)
 initial_conditions = [theta0; theta_dot0];
 
 % Time span for the simulation
-t_span = [0, 10];        % Simulate from t=0 to t=10 seconds
+t_span = [0, 20];       % Simulate from t=0 to t=20 seconds (slower simulation)
 
 % Differential equation function (returns derivatives)
 function dydt = system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau)
@@ -76,6 +75,9 @@ end
 % Prepare for animation
 figure;
 hold on;
+axis equal;  % Keep aspect ratio fixed
+xlim([-0.1, 0.15]);  % Adjust X-axis limits for better visualization
+ylim([0, 0.2]);  % Adjust Y-axis limits for better visualization
 
 % Plot the fixed base (bottom link)
 plot([0, D], [0, 0], 'k-', 'LineWidth', 2);  % Base link
@@ -97,6 +99,7 @@ h_spring2 = plot([D, D], [0, 0], 'r--'); % Spring 2
 for i = 1:length(t)
     % Extract the angle and angular velocity from the solution
     theta1 = y(i, 1);
+    
     % Calculate positions of key points
     A_x = -S * cos(theta1);  % Position of point A (left side link end)
     A_y = S * sin(theta1);
@@ -113,6 +116,6 @@ for i = 1:length(t)
     set(h_spring1, 'XData', [0, A_x], 'YData', [0, A_y]);
     set(h_spring2, 'XData', [D, B_x], 'YData', [0, B_y]);
     
-    % Pause for animation effect
-    pause(0.05);  % Adjust the pause for smoother or faster animation
+    % Pause for animation effect (slower simulation)
+    pause(0.1);  % Slower animation, adjust this for desired speed
 end
