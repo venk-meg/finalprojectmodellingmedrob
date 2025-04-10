@@ -10,18 +10,18 @@ w_s =  0.005;          % width side
 w_t =  0.0102;         % width top
 m_s = PLA_den * w_s * S;   % Mass of each side link (kg)
 m_t = PLA_den * w_t * T;   % Mass of the top link (kg)
-k1 = 10;               % Spring 1 stiffness (N/m)
-k2 = 10;               % Spring 2 stiffness (N/m)
+k1 = 100;               % Spring 1 stiffness (N/m)
+k2 = 0;               % Spring 2 stiffness (N/m)
 l1_o = 0.03;           % Rest length of spring 1 (m)
 l2_o = 0.03;           % Rest length of spring 2 (m)
 a = 0.025;             % Distance from bottom-left pivot to spring 1 attachment (m)
 b = 0.025;             % Distance from bottom-right pivot to spring 2 attachment (m)
 D = 0.085;             % Distance between pivots (m)
 Q1 = -0.05;            % Spring 1 bottom attachment point (m)
-Q2 = D + 0.05;         % Spring 2 bottom attachment point (m)
+Q2 = D + 0.09;         % Spring 2 bottom attachment point (m)
 
-% Define the applied torque (smooth increase/decrease with theta)
-tau = @(theta) 0.0 * sin(theta);  % Example applied torque (smooth)
+% Define the applied torque (smooth increase from 0 to 1 over time)
+tau = @(t) -1 / (1 + exp(-0.1 * (t - 2)));  % Sigmoid function: smooth increase from 0 to 1 over time, starting at t = 5
 
 % Initial conditions (start from rest)
 theta0 = 0;             % Initial angle (rad)
@@ -56,8 +56,8 @@ function dydt = system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2,
     spring_force_1 = k1 * (l1 - l1_o) * dl1_dtheta;
     spring_force_2 = k2 * (l2 - l2_o) * dl2_dtheta;
     
-    % Applied torque
-    torque = tau(theta1);
+    % Applied torque (from the smoothing function)
+    torque = tau(t);  % Get the current torque value from the sigmoid function
     
     % Effective inertia
     I_eff = (2 / 3) * m_s * S^2 + m_t * S^2 * cos(theta1)^2;
@@ -95,7 +95,7 @@ h_right_pivot = plot(D, 0, 'ko', 'MarkerFaceColor', 'k'); % Right pivot
 h_spring1 = plot([0, 0], [0, 0], 'b--'); % Spring 1 -> between a and A
 h_spring2 = plot([D, D], [0, 0], 'r--'); % Spring 2 -> between b and B
 
-% Plot the torque indication as an arrow (optional)
+% Plot the torque indication as text
 h_torque_text = text(0.1, 0.18, '', 'FontSize', 12, 'Color', 'm');  % Placeholder text for torque
 
 % Loop for animation
@@ -126,13 +126,10 @@ for i = 1:length(t)
     set(h_spring1, 'XData', [Q1, a_x], 'YData', [0, a_y]);  % Update Spring 1 -> between Q1 and a
     set(h_spring2, 'XData', [Q2, b_x], 'YData', [0, b_y]);  % Update Spring 2 -> between Q2 and b
     
-    % Update torque arrow (optional)
-    torque = tau(theta1);  % Get current torque value
-    torque_magnitude = 0.03 * torque;  % Adjust the torque magnitude for visualization
     % Update torque value text
-    torque = tau(theta1);  % Get current torque value
+    torque = tau(t(i));  % Get current torque value
     set(h_torque_text, 'String', ['Torque: ' num2str(torque, '%.2f') ' N.m']);  % Update torque value displayed
     
     % Pause for animation effect (slower simulation)
-    pause(0.1);  % Slower
+    pause(0.1);  % Slower animation, adjust this for desired speed
 end
