@@ -8,27 +8,28 @@ S = 0.05;              % Length of each side link (m)
 T = 0.085;             % Length of the top link (m)
 D = T;                 % Distance between pivots (m)
 w_s =  0.005;          % width side
-w_t =  0.0102;         % width top
+w_t =  0.0108;         % width top
 m_s = PLA_den * w_s * S;   % Mass of each side link (kg)
 m_t = PLA_den * w_t * T;   % Mass of the top link (kg)
 
-p1 = 0.4     %L spring1 ,m
-q1 = 0.2   %W spring1 ,m
-r1 =0.05        %H spring1 ,m
-p2  = 0.4       %L spring2 ,m
-q2  = 0.2       %W spring2 ,m
-r2   =0.05       %H spring2 ,m
+p1 = 0.4 ;    %L spring1 ,m
+q1 = 0.2  ; %W spring1 ,m
+r1 =0.05   ;     %H spring1 ,m
+p2  = 0.4   ;    %L spring2 ,m
+q2  = 0.2    ;   %W spring2 ,m
+r2   =0.05    ;   %H spring2 ,m
 
-E =  55158       %Elastic modulus estimate (linear for now nonlinear later), 55158 N/m which is 8 psi
+E =  55158      ; %Elastic modulus estimate (linear for now nonlinear later), 55158 N/m which is 8 psi
 
 k1 = E*q1*r1/p1;               % Spring 1 stiffness (N/m)
 k2 = E*q2*r2/p2;               % Spring 2 stiffness (N/m)
 l1_o = 0.07;           % Rest length of spring 1 (m)
-l2_o = 0.1;           % Rest length of spring 2 (m)
-a = 0.025;             % Distance from bottom-left pivot to spring 1 attachment (m)
-b = 0.005;             % Distance from bottom-right pivot to spring 2 attachment (m)
+l2_o = 0.03;           % Rest length of spring 2 (m)
+a = 0.05;             % Distance from bottom-left pivot to spring 1 attachment (m)
+b = 0.05;             % Distance from bottom-right pivot to spring 2 attachment (m)
 Q1 = -0.03;            % Spring 1 bottom attachment point (m)
-Q2 = D + 0.03;         % Spring 2 bottom attachment point (m)
+Q2 = D + 0.015;         % Spring 2 bottom attachment point (m
+
 
 % Define the applied torque (smooth increase from 0 to 1 over time)
 %tau = @(t) ((mod(t,4) >= 1 & mod(t,4) < 2) * (-1.5)) + ((mod(t,4) >= 2 & mod(t,4) < 3) * (1.5));
@@ -36,12 +37,12 @@ tau = @(t) (0);
 
 
 % Initial conditions (start from rest)
-theta0 = 0;             % Initial angle (rad)
+theta0 = pi/2;             % Initial angle (rad)
 theta_dot0 = 0;         % Initial angular velocity (rad/s)
 initial_conditions = [theta0; theta_dot0];
 
 % Time span for the simulation
-t_span = [0, 20];       % Simulate from t=0 to t=20 seconds (slower simulation)
+t_span = [0, 10];       % Simulate from t=0 to t=20 seconds (slower simulation)
 
 % Differential equation function (returns derivatives)
 function dydt = system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau)
@@ -83,6 +84,38 @@ end
 
 % Solve the ODE using ode45
 [t, y] = ode45(@(t, y) system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau), t_span, initial_conditions);
+
+
+% Define the function to calculate net torque (torque - spring forces)
+function net_torque = equilibrium_func(theta, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau)
+    % Calculate spring lengths at given theta
+    l1 = sqrt((a * sin(theta))^2 + (a * cos(theta) + Q1)^2); % Spring 1 length
+    l2 = sqrt((b * sin(theta))^2 + ((Q2 - T) + b * cos(theta))^2); % Spring 2 length
+    
+    % Derivatives of spring lengths
+    dl1_dtheta = (a * cos(theta) + Q1) / l1;
+    dl2_dtheta = ((Q2 - T) + b * cos(theta)) / l2;
+    
+    % Spring forces (passive forces, only reacting to displacement)
+    spring_force_1 = k1 * (l1 - l1_o) * dl1_dtheta;
+    spring_force_2 = k2 * (l2 - l2_o) * dl2_dtheta;
+    
+    % Applied torque (from the smoothing function)
+    torque = tau(theta);  % Get the current torque value from the sigmoid function
+    
+    % Net torque (difference between applied torque and spring forces)
+    net_torque = torque - (spring_force_1 + spring_force_2);
+end
+
+% Use fzero to find equilibrium points numerically (root of net_torque function)
+theta_eq1 = fzero(@(theta) equilibrium_func(theta, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau), 0);  % Starting guess at 0
+theta_eq2 = fzero(@(theta) equilibrium_func(theta, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau), pi/2);  % Starting guess at 90 degrees
+
+disp(['Equilibrium at theta = 0: ', num2str(theta_eq1)]);
+disp(['Equilibrium at theta = 90: ', num2str(theta_eq2)]);
+
+
+
 
 theta_values = y(:,1); % in radians
 
@@ -199,3 +232,4 @@ for i = 1:length(t)
     % Pause for animation effect (slower simulation)
     pause(0.1);  % Slower animation, adjust this for desired speed
 end
+
