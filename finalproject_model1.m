@@ -6,22 +6,34 @@ clc;
 PLA_den = 1240;         % PLA density kg/m3
 S = 0.05;              % Length of each side link (m)
 T = 0.085;             % Length of the top link (m)
+D = T;                 % Distance between pivots (m)
 w_s =  0.005;          % width side
 w_t =  0.0102;         % width top
 m_s = PLA_den * w_s * S;   % Mass of each side link (kg)
 m_t = PLA_den * w_t * T;   % Mass of the top link (kg)
-k1 = 100;               % Spring 1 stiffness (N/m)
-k2 = 0;               % Spring 2 stiffness (N/m)
-l1_o = 0.03;           % Rest length of spring 1 (m)
-l2_o = 0.03;           % Rest length of spring 2 (m)
+
+p1 = 0.4     %L spring1 ,m
+q1 = 0.2   %W spring1 ,m
+r1 =0.05        %H spring1 ,m
+p2  = 0.4       %L spring2 ,m
+q2  = 0.2       %W spring2 ,m
+r2   =0.05       %H spring2 ,m
+
+E =  55158       %Elastic modulus estimate (linear for now nonlinear later), 55158 N/m which is 8 psi
+
+k1 = E*q1*r1/p1;               % Spring 1 stiffness (N/m)
+k2 = E*q2*r2/p2;               % Spring 2 stiffness (N/m)
+l1_o = 0.07;           % Rest length of spring 1 (m)
+l2_o = 0.1;           % Rest length of spring 2 (m)
 a = 0.025;             % Distance from bottom-left pivot to spring 1 attachment (m)
-b = 0.025;             % Distance from bottom-right pivot to spring 2 attachment (m)
-D = 0.085;             % Distance between pivots (m)
-Q1 = -0.05;            % Spring 1 bottom attachment point (m)
-Q2 = D + 0.09;         % Spring 2 bottom attachment point (m)
+b = 0.005;             % Distance from bottom-right pivot to spring 2 attachment (m)
+Q1 = -0.03;            % Spring 1 bottom attachment point (m)
+Q2 = D + 0.03;         % Spring 2 bottom attachment point (m)
 
 % Define the applied torque (smooth increase from 0 to 1 over time)
-tau = @(t) -1 / (1 + exp(-0.1 * (t - 2)));  % Sigmoid function: smooth increase from 0 to 1 over time, starting at t = 5
+%tau = @(t) ((mod(t,4) >= 1 & mod(t,4) < 2) * (-1.5)) + ((mod(t,4) >= 2 & mod(t,4) < 3) * (1.5));
+tau = @(t) (0);
+
 
 % Initial conditions (start from rest)
 theta0 = 0;             % Initial angle (rad)
