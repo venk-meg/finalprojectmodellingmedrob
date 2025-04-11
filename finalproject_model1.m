@@ -84,6 +84,54 @@ end
 % Solve the ODE using ode45
 [t, y] = ode45(@(t, y) system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau), t_span, initial_conditions);
 
+theta_values = y(:,1); % in radians
+
+% Pre-compute spring forces for each time instant
+numPoints = length(t);
+spring_force1 = zeros(numPoints,1);
+spring_force2 = zeros(numPoints,1);
+for i = 1:numPoints
+    theta1 = theta_values(i);
+    l1 = sqrt((a * sin(theta1))^2 + (a * cos(theta1) + Q1)^2);
+    dl1_dtheta = (a * cos(theta1) + Q1) / l1;
+    spring_force1(i) = k1 * (l1 - l1_o) * dl1_dtheta;
+    
+    l2 = sqrt((b * sin(theta1))^2 + ((Q2 - T) + b * cos(theta1))^2);
+    dl2_dtheta = ((Q2 - T) + b * cos(theta1)) / l2;
+    spring_force2(i) = k2 * (l2 - l2_o) * dl2_dtheta;
+end
+
+% Applied torque values over time (computed from the square wave)
+torque_values = arrayfun(tau, t);
+
+% Create a figure to plot the time-series data
+figure;
+subplot(4,1,1);
+plot(t, theta_values, 'b-', 'LineWidth', 2);
+ylabel('\theta (rad)');
+title('Angle vs. Time');
+grid on;
+
+subplot(4,1,2);
+plot(t, torque_values, 'm-', 'LineWidth', 2);
+ylabel('Torque (N.m)');
+title('Applied Torque vs. Time');
+grid on;
+
+subplot(4,1,3);
+plot(t, spring_force1, 'r--', 'LineWidth', 2);
+ylabel('Spring Force 1 (N)');
+title('Spring Force 1 vs. Time');
+grid on;
+
+subplot(4,1,4);
+plot(t, spring_force2, 'g--', 'LineWidth', 2);
+ylabel('Spring Force 2 (N)');
+xlabel('Time (s)');
+title('Spring Force 2 vs. Time');
+grid on;
+
+
 % Prepare for animation
 figure;
 hold on;
@@ -108,7 +156,7 @@ h_spring1 = plot([0, 0], [0, 0], 'b--'); % Spring 1 -> between a and A
 h_spring2 = plot([D, D], [0, 0], 'r--'); % Spring 2 -> between b and B
 
 % Plot the torque indication as text
-h_torque_text = text(0.1, 0.18, '', 'FontSize', 12, 'Color', 'm');  % Placeholder text for torque
+h_data = text(0.1, 0.18, '', 'FontSize', 12, 'Color', 'm');  % Placeholder text for torque
 
 % Loop for animation
 for i = 1:length(t)
@@ -138,9 +186,15 @@ for i = 1:length(t)
     set(h_spring1, 'XData', [Q1, a_x], 'YData', [0, a_y]);  % Update Spring 1 -> between Q1 and a
     set(h_spring2, 'XData', [Q2, b_x], 'YData', [0, b_y]);  % Update Spring 2 -> between Q2 and b
     
-    % Update torque value text
-    torque = tau(t(i));  % Get current torque value
-    set(h_torque_text, 'String', ['Torque: ' num2str(torque, '%.2f') ' N.m']);  % Update torque value displayed
+    % Update displayed data (convert theta from rad to deg)
+    currentThetaDeg = rad2deg(theta1);
+    currentTorque = tau(t(i));
+    currentSpringForce1 = spring_force1(i);
+    currentSpringForce2 = spring_force2(i);
+    
+    data_str = sprintf('Theta: %.1f deg\nTorque: %.2f N.m\nSpring1: %.2f N\nSpring2: %.2f N', ...
+        currentThetaDeg, currentTorque, currentSpringForce1, currentSpringForce2);
+    set(h_data, 'String', data_str);
     
     % Pause for animation effect (slower simulation)
     pause(0.1);  % Slower animation, adjust this for desired speed
