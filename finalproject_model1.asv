@@ -33,7 +33,7 @@ l1_o = 0.1;             % initial rest length of spring 1 (m)
 l2_o = 0.5;             % initial rest length of spring 2 (m)
 
 % Attachment points along the side links
-a = 0.05;                % Distance from bottom-left pivot to spring 1 attachment (m)
+a = 0.025;                % Distance from bottom-left pivot to spring 1 attachment (m)
 b = 0.025;                % Distance from bottom-right pivot to spring 2 attachment (m)
 
 % Fixed bottom attachment points for springs
@@ -41,15 +41,15 @@ Q1 = -0.03;              % Spring 1 bottom attachment point (m)
 Q2 = D + 0.015;          % Spring 2 bottom attachment point (m)
 
 % Define the applied torque for the dynamic simulation; here set to zero.
-tau = @(t) -8.325;
+tau = @(t) 0;
 
 % Initial conditions (start from rest)
-theta0 = 0;           % Initial angle (rad)
+theta0 = pi/2;           % Initial angle (rad)
 theta_dot0 = 0;          % Initial angular velocity (rad/s)
 initial_conditions = [theta0; theta_dot0];
 
 % Time span for the simulation
-t_span = [0, 60];
+t_span = [0, 10];
 
 %% Modular Functions for Spring Lengths and Their Derivatives
 l1_fun = @(theta) sqrt((a * sin(theta))^2 + (a * cos(theta) + Q1)^2);
