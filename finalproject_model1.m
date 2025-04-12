@@ -1,143 +1,90 @@
-% Clear workspace
+%% Main Script
+% Clear workspace and command window
 clear;
 clc;
 
-% Parameters
-PLA_den = 1240;         % PLA density kg/m3
-S = 0.05;              % Length of each side link (m)
-T = 0.085;             % Length of the top link (m)
-D = T;                 % Distance between pivots (m)
-w_s =  0.005;          % width side
-w_t =  0.0108;         % width top
+%% Parameters
+PLA_den = 1240;             % PLA density kg/m3
+S = 0.05;                  % Length of each side link (m)
+T = 0.085;                 % Length of the top link (m)
+D = T;                     % Distance between pivots (m)
+w_s = 0.005;               % Width of side link (m)
+w_t = 0.0108;              % Width of top link (m)
 m_s = PLA_den * w_s * S;   % Mass of each side link (kg)
 m_t = PLA_den * w_t * T;   % Mass of the top link (kg)
 
-p1 = 0.4 ;    %L spring1 ,m
-q1 = 0.2  ; %W spring1 ,m
-r1 =0.05   ;     %H spring1 ,m
-p2  = 0.4   ;    %L spring2 ,m
-q2  = 0.2    ;   %W spring2 ,m
-r2   =0.05    ;   %H spring2 ,m
+% Spring geometry parameters (for stiffness calculation)
+p1 = 0.4;    % L spring1 (m)
+q1 = 0.2;    % W spring1 (m)
+r1 = 0.05;   % H spring1 (m)
+p2 = 0.4;    % L spring2 (m)
+q2 = 0.2;    % W spring2 (m)
+r2 = 0.05;   % H spring2 (m)
+E = 55158;   % Elastic modulus (N/m)
 
-E =  55158      ; %Elastic modulus estimate (linear for now nonlinear later), 55158 N/m which is 8 psi
+% Compute spring stiffnesses
+k1 = E * q1 * r1 / p1;   % Spring 1 stiffness (N/m)
+k2 = E * q2 * r2 / p2;   % Spring 2 stiffness (N/m)
+l1_o = 0.07;             % Rest length of spring 1 (m)
+l2_o = 0.03;             % Rest length of spring 2 (m)
 
-k1 = E*q1*r1/p1;               % Spring 1 stiffness (N/m)
-k2 = E*q2*r2/p2;               % Spring 2 stiffness (N/m)
-l1_o = 0.07;           % Rest length of spring 1 (m)
-l2_o = 0.03;           % Rest length of spring 2 (m)
-a = 0.05;             % Distance from bottom-left pivot to spring 1 attachment (m)
-b = 0.05;             % Distance from bottom-right pivot to spring 2 attachment (m)
-Q1 = -0.03;            % Spring 1 bottom attachment point (m)
-Q2 = D + 0.015;         % Spring 2 bottom attachment point (m
+% Attachment points along the side links
+a = 0.05;                % Distance from bottom-left pivot to spring 1 attachment (m)
+b = 0.05;                % Distance from bottom-right pivot to spring 2 attachment (m)
 
+% Fixed bottom attachment points for springs
+Q1 = -0.03;              % Spring 1 bottom attachment point (m)
+Q2 = D + 0.015;          % Spring 2 bottom attachment point (m)
 
-% Define the applied torque (smooth increase from 0 to 1 over time)
-%tau = @(t) ((mod(t,4) >= 1 & mod(t,4) < 2) * (-1.5)) + ((mod(t,4) >= 2 & mod(t,4) < 3) * (1.5));
-tau = @(t) (0);
-
+% Define the applied torque; here set to zero.
+tau = @(t) 0;
 
 % Initial conditions (start from rest)
-theta0 = pi/2;             % Initial angle (rad)
-theta_dot0 = 0;         % Initial angular velocity (rad/s)
+theta0 = pi/2;           % Initial angle (rad)
+theta_dot0 = 0;          % Initial angular velocity (rad/s)
 initial_conditions = [theta0; theta_dot0];
 
 % Time span for the simulation
-t_span = [0, 10];       % Simulate from t=0 to t=20 seconds (slower simulation)
+t_span = [0, 10];
 
-% Differential equation function (returns derivatives)
-function dydt = system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau)
-    theta1 = y(1);  % Angle of the left side link
-    theta_dot1 = y(2);
-    
-    % For the parallelogram constraint, we know theta2 = theta1
-    % Calculate the positions of points A and B, with fixed length of the top link
-    A_x = -S * cos(theta1);
-    A_y = S * sin(theta1);
-    
-    B_x = D - S * cos(theta1); % Fixed top link length constraint
-    B_y = S * sin(theta1);     % Symmetric behavior
-    
-    % Calculate spring lengths
-    l1 = sqrt((a * sin(theta1))^2 + (a * cos(theta1) + Q1)^2); % Spring 1 length
-    l2 = sqrt((b * sin(theta1))^2 + ((Q2 - T) + b * cos(theta1))^2); % Spring 2 length
-    
-    % Derivatives of spring lengths
-    dl1_dtheta = (a * cos(theta1) + Q1) / l1;
-    dl2_dtheta = ((Q2 - T) + b * cos(theta1)) / l2;
-    
-    % Spring forces (passive forces, only reacting to displacement)
-    spring_force_1 = k1 * (l1 - l1_o) * dl1_dtheta;
-    spring_force_2 = k2 * (l2 - l2_o) * dl2_dtheta;
-    
-    % Applied torque (from the smoothing function)
-    torque = tau(t);  % Get the current torque value from the sigmoid function
-    
-    % Effective inertia
-    I_eff = (2 / 3) * m_s * S^2 + m_t * S^2 * cos(theta1)^2;
-    
-    % Differential equation for theta1 (since theta2 = theta1 in the parallelogram)
-    theta1_ddot = (spring_force_1 + spring_force_2 - torque) / I_eff;
-    
-    % Return the derivatives
-    dydt = [theta_dot1; theta1_ddot];
-end
+%% Modular Functions for l1 and l2 and Their Derivatives
+l1_fun = @(theta) sqrt((a * sin(theta))^2 + (a * cos(theta) + Q1)^2);
+dl1_fun = @(theta) (a * cos(theta) + Q1) / l1_fun(theta);
 
-% Solve the ODE using ode45
-[t, y] = ode45(@(t, y) system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau), t_span, initial_conditions);
+l2_fun = @(theta) sqrt((b * sin(theta))^2 + ((Q2 - T) + b * cos(theta))^2);
+dl2_fun = @(theta) ((Q2 - T) + b * cos(theta)) / l2_fun(theta);
 
+%% Solve the ODE using ode45
+% Pass the modular functions and D into the system_eqns function.
+[t, y] = ode45(@(t, y) system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau, l1_fun, dl1_fun, l2_fun, dl2_fun), t_span, initial_conditions);
 
-% Define the function to calculate net torque (torque - spring forces)
-function net_torque = equilibrium_func(theta, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau)
-    % Calculate spring lengths at given theta
-    l1 = sqrt((a * sin(theta))^2 + (a * cos(theta) + Q1)^2); % Spring 1 length
-    l2 = sqrt((b * sin(theta))^2 + ((Q2 - T) + b * cos(theta))^2); % Spring 2 length
-    
-    % Derivatives of spring lengths
-    dl1_dtheta = (a * cos(theta) + Q1) / l1;
-    dl2_dtheta = ((Q2 - T) + b * cos(theta)) / l2;
-    
-    % Spring forces (passive forces, only reacting to displacement)
-    spring_force_1 = k1 * (l1 - l1_o) * dl1_dtheta;
-    spring_force_2 = k2 * (l2 - l2_o) * dl2_dtheta;
-    
-    % Applied torque (from the smoothing function)
-    torque = tau(theta);  % Get the current torque value from the sigmoid function
-    
-    % Net torque (difference between applied torque and spring forces)
-    net_torque = torque - (spring_force_1 + spring_force_2);
-end
+%% Find Equilibrium Points using fzero
+% Define constant applied torque for equilibrium (set tau_const=0)
+tau_const0 = 0;
+tau_const90 = 0;  % Equilibrium condition: spring forces balance applied torque
 
-% Use fzero to find equilibrium points numerically (root of net_torque function)
-theta_eq1 = fzero(@(theta) equilibrium_func(theta, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau), 0);  % Starting guess at 0
-theta_eq2 = fzero(@(theta) equilibrium_func(theta, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau), pi/2);  % Starting guess at 90 degrees
+theta_eq1 = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_o, l2_o, l1_fun, dl1_fun, l2_fun, dl2_fun, tau_const0), 0);
+theta_eq2 = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_o, l2_o, l1_fun, dl1_fun, l2_fun, dl2_fun, tau_const90), pi/2);
 
 disp(['Equilibrium at theta = 0: ', num2str(theta_eq1)]);
 disp(['Equilibrium at theta = 90: ', num2str(theta_eq2)]);
 
-
-
-
+%% Precompute Time-Series Data for Fancy Charts
 theta_values = y(:,1); % in radians
-
-% Pre-compute spring forces for each time instant
 numPoints = length(t);
 spring_force1 = zeros(numPoints,1);
 spring_force2 = zeros(numPoints,1);
 for i = 1:numPoints
-    theta1 = theta_values(i);
-    l1 = sqrt((a * sin(theta1))^2 + (a * cos(theta1) + Q1)^2);
-    dl1_dtheta = (a * cos(theta1) + Q1) / l1;
-    spring_force1(i) = k1 * (l1 - l1_o) * dl1_dtheta;
+    theta_i = theta_values(i);
+    l1_val = l1_fun(theta_i);
+    spring_force1(i) = k1 * (l1_val - l1_o) * dl1_fun(theta_i);
     
-    l2 = sqrt((b * sin(theta1))^2 + ((Q2 - T) + b * cos(theta1))^2);
-    dl2_dtheta = ((Q2 - T) + b * cos(theta1)) / l2;
-    spring_force2(i) = k2 * (l2 - l2_o) * dl2_dtheta;
+    l2_val = l2_fun(theta_i);
+    spring_force2(i) = k2 * (l2_val - l2_o) * dl2_fun(theta_i);
 end
-
-% Applied torque values over time (computed from the square wave)
 torque_values = arrayfun(tau, t);
 
-% Create a figure to plot the time-series data
+%% Fancy Chart: Time-Series Plots
 figure;
 subplot(4,1,1);
 plot(t, theta_values, 'b-', 'LineWidth', 2);
@@ -164,62 +111,60 @@ xlabel('Time (s)');
 title('Spring Force 2 vs. Time');
 grid on;
 
-
-% Prepare for animation
+%% Animation with Live Data Display
 figure;
 hold on;
-axis equal;  % Keep aspect ratio fixed
-xlim([-0.1, 0.15]);  % Adjust X-axis limits for better visualization
-ylim([0, 0.2]);  % Adjust Y-axis limits for better visualization
+axis equal;
+xlim([-0.1, 0.15]);
+ylim([0, 0.2]);
+xlabel('X (m)');
+ylabel('Y (m)');
+title('Mechanism Animation with Live Data');
 
-% Plot the fixed base (bottom link)
-plot([0, D], [0, 0], 'k-', 'LineWidth', 2);  % Base link
+% Plot fixed base (bottom link)
+plot([0, D], [0, 0], 'k-', 'LineWidth', 2);
 
-% Create plot for the mechanism animation
+% Create plot objects for mechanism links
 h_side_left = plot([0, 0], [0, 0], 'b-', 'LineWidth', 3);   % Left side link
-h_side_right = plot([D, D], [0, 0], 'r-', 'LineWidth', 3);  % Right side link
-h_top = plot([0, D], [0, 0], 'g-', 'LineWidth', 3);        % Top link
+h_side_right = plot([D, D], [0, 0], 'r-', 'LineWidth', 3);    % Right side link
+h_top = plot([0, D], [0, 0], 'g-', 'LineWidth', 3);           % Top link
 
-% Add markers for the joints (pivots)
-h_left_pivot = plot(0, 0, 'ko', 'MarkerFaceColor', 'k'); % Left pivot
-h_right_pivot = plot(D, 0, 'ko', 'MarkerFaceColor', 'k'); % Right pivot
+% Plot joint markers
+plot(0, 0, 'ko', 'MarkerFaceColor', 'k');
+plot(D, 0, 'ko', 'MarkerFaceColor', 'k');
 
-% Add spring lines (optional, for visualization)
-h_spring1 = plot([0, 0], [0, 0], 'b--'); % Spring 1 -> between a and A
-h_spring2 = plot([D, D], [0, 0], 'r--'); % Spring 2 -> between b and B
+% Create plot objects for spring lines (visualization)
+h_spring1 = plot([0, 0], [0, 0], 'b--');  % Spring 1: from fixed Q1 to attachment point 'a'
+h_spring2 = plot([D, D], [0, 0], 'r--');  % Spring 2: from fixed Q2 to attachment point 'b'
 
-% Plot the torque indication as text
-h_data = text(0.1, 0.18, '', 'FontSize', 12, 'Color', 'm');  % Placeholder text for torque
+% Create a text object for live data (normalized upper-right)
+h_data = text(0.95, 0.9, '', 'FontSize', 12, 'Color', 'm', 'Units', 'normalized', 'HorizontalAlignment','right');
 
-% Loop for animation
 for i = 1:length(t)
-    % Extract the angle and angular velocity from the solution
-    theta1 = y(i, 1);
+    theta1 = y(i,1);
     
-    % Calculate positions of key points
-    A_x = -S * cos(theta1);  % Position of point A (left side link end)
+    % Free endpoint positions for the side links:
+    A_x = -S * cos(theta1);
     A_y = S * sin(theta1);
-    
-    B_x = D - S * cos(theta1);  % Position of point B (right side link end)
+    B_x = D - S * cos(theta1);
     B_y = S * sin(theta1);
     
-    % Calculate spring attachment points a and b
-    a_x = -a * cos(theta1);  % Position of spring attachment point a
-    a_y = a * sin(theta1);  % Position of spring attachment point a
+    % Spring attachment points along side links:
+    a_x = -a * cos(theta1); % Point on left link (distance 'a' from left pivot)
+    a_y = a * sin(theta1);
+    b_x = D - b * cos(theta1); % Point on right link (distance 'b' from right pivot)
+    b_y = b * sin(theta1);
     
-    b_x = D - b * cos(theta1);  % Position of spring attachment point b
-    b_y = b * sin(theta1);      % Position of spring attachment point b
-    
-    % Update the positions of the links
+    % Update link positions
     set(h_side_left, 'XData', [0, A_x], 'YData', [0, A_y]);
     set(h_side_right, 'XData', [D, B_x], 'YData', [0, B_y]);
     set(h_top, 'XData', [A_x, B_x], 'YData', [A_y, B_y]);
     
-    % Update spring positions (for visualization)
-    set(h_spring1, 'XData', [Q1, a_x], 'YData', [0, a_y]);  % Update Spring 1 -> between Q1 and a
-    set(h_spring2, 'XData', [Q2, b_x], 'YData', [0, b_y]);  % Update Spring 2 -> between Q2 and b
+    % Update spring line positions
+    set(h_spring1, 'XData', [Q1, a_x], 'YData', [0, a_y]);
+    set(h_spring2, 'XData', [Q2, b_x], 'YData', [0, b_y]);
     
-    % Update displayed data (convert theta from rad to deg)
+    % Update live data text display
     currentThetaDeg = rad2deg(theta1);
     currentTorque = tau(t(i));
     currentSpringForce1 = spring_force1(i);
@@ -229,7 +174,47 @@ for i = 1:length(t)
         currentThetaDeg, currentTorque, currentSpringForce1, currentSpringForce2);
     set(h_data, 'String', data_str);
     
-    % Pause for animation effect (slower simulation)
-    pause(0.1);  % Slower animation, adjust this for desired speed
+    pause(0.1);
 end
 
+%% Local Function Definitions
+function dydt = system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau, l1_fun, dl1_fun, l2_fun, dl2_fun)
+    theta1 = y(1);
+    theta_dot1 = y(2);
+    
+    % Endpoints positions (parallelogram: theta2 = theta1)
+    A_x = -S * cos(theta1);
+    A_y = S * sin(theta1);
+    B_x = D - S * cos(theta1);
+    B_y = S * sin(theta1);
+    
+    % Modular spring calculations
+    l1 = l1_fun(theta1);
+    l2 = l2_fun(theta1);
+    dl1 = dl1_fun(theta1);
+    dl2 = dl2_fun(theta1);
+    
+    % Compute spring forces
+    spring_force_1 = k1 * (l1 - l1_o) * dl1;
+    spring_force_2 = k2 * (l2 - l2_o) * dl2;
+    
+    torque = tau(t);
+    
+    % Effective inertia (using m_t*S^2 without cos^2 modulation)
+    I_eff = (2/3)*m_s*S^2 + m_t*S^2;
+    
+    theta1_ddot = (spring_force_1 + spring_force_2 - torque) / I_eff;
+    dydt = [theta_dot1; theta1_ddot];
+end
+
+function netTorque = equilibrium_func(theta, k1, k2, l1_o, l2_o, l1_fun, dl1_fun, l2_fun, dl2_fun, tau_const)
+    l1 = l1_fun(theta);
+    l2 = l2_fun(theta);
+    dl1 = dl1_fun(theta);
+    dl2 = dl2_fun(theta);
+    
+    springForce1 = k1 * (l1 - l1_o) * dl1;
+    springForce2 = k2 * (l2 - l2_o) * dl2;
+    
+    netTorque = tau_const - (springForce1 + springForce2);
+end
