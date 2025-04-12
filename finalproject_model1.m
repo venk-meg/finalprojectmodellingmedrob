@@ -17,10 +17,10 @@ m_t = PLA_den * w_t * T;    % Mass of the top link (kg)
 % (Adjust these parameters to modify the spring stiffness.)
 p1 = 0.1;    % L spring1 (m)
 q1 = 0.05;    % W spring1 (m)
-r1 = 0.01;   % H spring1 (m)
-p2 = 0.5;    % L spring2 (m)
+r1 = 0.05;   % H spring1 (m)
+p2 = 0.3;    % L spring2 (m)
 q2 = 0.05;    % W spring2 (m)
-r2 = 0.01;   % H spring2 (m)
+r2 = 0.05;   % H spring2 (m)
 E = 55158;   % Elastic modulus (N/m)
 
 % Compute spring stiffnesses
@@ -30,26 +30,30 @@ k2 = E * q2 * r2 / p2;   % Spring 2 stiffness (N/m)
 % For the equilibrium investigation, we will allow the spring rest lengths to vary.
 % (Other parameters like attachment points could also be swept.)
 l1_o = 0.1;             % initial rest length of spring 1 (m)
-l2_o = 0.5;             % initial rest length of spring 2 (m)
+l2_o = 0.3;             % initial rest length of spring 2 (m)
 
 % Attachment points along the side links
-a = 0.05;                % Distance from bottom-left pivot to spring 1 attachment (m)
-b = 0.025;                % Distance from bottom-right pivot to spring 2 attachment (m)
+a = 0.02;                % Distance from bottom-left pivot to spring 1 attachment (m)
+b = 0.02;                % Distance from bottom-right pivot to spring 2 attachment (m)
 
 % Fixed bottom attachment points for springs
 Q1 = -0.03;              % Spring 1 bottom attachment point (m)
 Q2 = D + 0.015;          % Spring 2 bottom attachment point (m)
 
 % Define the applied torque for the dynamic simulation; here set to zero.
-tau = @(t) -8.325;
+tau = @(t) (-40).*(t < 1);
+%tau = @(t) 0;
+
+% Damping coefficient (added to reduce oscillations)
+c = 2;   % Adjust this value as needed
 
 % Initial conditions (start from rest)
-theta0 = 0;           % Initial angle (rad)
+theta0 = deg2rad(0);           % Initial angle (rad)
 theta_dot0 = 0;          % Initial angular velocity (rad/s)
 initial_conditions = [theta0; theta_dot0];
 
 % Time span for the simulation
-t_span = [0, 60];
+t_span = [0, 10];
 
 %% Modular Functions for Spring Lengths and Their Derivatives
 l1_fun = @(theta) sqrt((a * sin(theta))^2 + (a * cos(theta) + Q1)^2);
@@ -59,7 +63,7 @@ l2_fun = @(theta) sqrt((b * sin(theta))^2 + ((Q2 - T) + b * cos(theta))^2);
 dl2_fun = @(theta) ((Q2 - T) + b * cos(theta)) / l2_fun(theta);
 
 %% Solve the ODE using ode45 (Dynamic Simulation)
-[t, y] = ode45(@(t,y) system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau, l1_fun, dl1_fun, l2_fun, dl2_fun), t_span, initial_conditions);
+[t, y] = ode45(@(t,y) system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, c, tau, l1_fun, dl1_fun, l2_fun, dl2_fun), t_span, initial_conditions);
 
 %% Find Equilibrium Points using fzero
 % Our goal is to find two equilibria (net torque = 0):
@@ -163,40 +167,8 @@ for i = 1:length(t)
     pause(0.1);
 end
 
-%% Parameter Sweep to Test Different Spring Parameters
-% Here we vary the rest lengths l1_o and l2_o over a range to see which combinations
-% yield equilibria near the desired targets:
-% - With tau_const = 0, we want equilibrium near theta = 0.
-% - With tau_const = -1, we want equilibrium near theta = pi/2 (~1.571 rad).
-
-% Define ranges (you can adjust these ranges as desired)
-l1_range = linspace(0.1, 0.5, 20);
-l2_range = linspace(0.1, 0.5, 20);
-
-% Tolerance values (radians) for acceptable deviation from targets:
-tol1 = 0.1;         % Equilibrium 1 should be within 0.1 rad of 0
-tol2 = 0.1;         % Equilibrium 2 should be within 0.1 rad of pi/2
-
-fprintf('\nParameter Sweep Candidates:\n');
-for i = 1:length(l1_range)
-    for j = 1:length(l2_range)
-        l1_test = l1_range(i);
-        l2_test = l2_range(j);
-        
-        % Compute the equilibrium angles for this parameter set:
-        theta_eq1_test = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_test, l2_test, l1_fun, dl1_fun, l2_fun, dl2_fun, 0), 0);
-        theta_eq2_test = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_test, l2_test, l1_fun, dl1_fun, l2_fun, dl2_fun, -1), pi/2);
-        
-        % Check if they are close to the target values:
-        if (abs(theta_eq1_test - 0) < tol1) && (abs(theta_eq2_test - (pi/2)) < tol2)
-            fprintf('l1_o = %.3f m, l2_o = %.3f m  =>  Equilibrium1 = %.3f rad (%.1f°), Equilibrium2 = %.3f rad (%.1f°)\n', ...
-                l1_test, l2_test, theta_eq1_test, rad2deg(theta_eq1_test), theta_eq2_test, rad2deg(theta_eq2_test));
-        end
-    end
-end
-
 %% Local Function Definitions
-function dydt = system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, tau, l1_fun, dl1_fun, l2_fun, dl2_fun)
+function dydt = system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, D, c, tau, l1_fun, dl1_fun, l2_fun, dl2_fun)
     theta1 = y(1);
     theta_dot1 = y(2);
     
@@ -223,7 +195,7 @@ function dydt = system_eqns(t, y, S, m_s, m_t, k1, k2, l1_o, l2_o, a, b, Q1, Q2,
     I_eff = (2/3)*m_s*S^2 + m_t*S^2;
     
     % Equation of motion: I_eff * theta_ddot = (spring forces) - (external torque)
-    theta_ddot = (spring_force_1 + spring_force_2 - torque) / I_eff;
+    theta_ddot = (spring_force_1 + spring_force_2 - torque - c*theta_dot1) / I_eff;
     dydt = [theta_dot1; theta_ddot];
 end
 

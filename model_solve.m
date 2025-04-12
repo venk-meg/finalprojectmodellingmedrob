@@ -1,99 +1,90 @@
-%% Parameter Sweep to Find Bistable Equilibria
+%% Parameter Sweep for Bistable Equilibria
 % Clear workspace and command window
 clear;
 clc;
 
-%% Fixed Mechanism & Material Parameters
-PLA_den = 1240;             % PLA density, kg/m^3
-S = 0.05;                   % Side link length (m)
-T = 0.085;                  % Top link length (m)
-D = T;                      % Distance between pivots (m)
-w_s = 0.005;                % Width of side link (m)
-w_t = 0.0108;               % Width of top link (m)
-m_s = PLA_den * w_s * S;    % Mass of each side link (kg)
-m_t = PLA_den * w_t * T;    % Mass of the top link (kg)
+%% Global Geometry & Material Parameters (fixed)
+PLA_den = 1240;        % PLA density kg/m3
+S = 0.05;              % Length of each side link (m)
+T = 0.085;             % Length of the top link (m)
+D = T;                 % Distance between pivots (m)
+w_s = 0.005;           % Width of side link (m)
+w_t = 0.0108;          % Width of top link (m)
+m_s = PLA_den * w_s * S;   % Mass of each side link (kg)
+m_t = PLA_den * w_t * T;   % Mass of the top link (kg)
 
-% Fixed attachment (pivot) parameters
-% These remain unchanged during the sweep:
-a = 0.025;                % Distance from left pivot to spring 1 attachment (m)
-b = 0.025;                % Distance from right pivot to spring 2 attachment (m)
-Q1 = -0.03;               % Spring 1 fixed (bottom) attachment (m)
-Q2 = D + 0.015;           % Spring 2 fixed (bottom) attachment (m)
-E = 55158;                % Elastic modulus (N/m)
+E = 55158;             % Elastic modulus (N/m)
+% For simplicity, we fix these two (but you could sweep them too)
+q1 = 0.2; r1 = 0.05;    % Dimensions for spring 1 (width and height)
+q2 = 0.2; r2 = 0.05;    % Dimensions for spring 2 (width and height)
 
-%% Define Sweep Ranges for Spring Geometry & Rest Lengths
-% These are the design parameters that govern the computed spring stiffnesses.
-% (Here we use a very coarse grid with two values per parameter. Increase the number
-% of points if you wish to explore more combinations.)
+%% Define Ranges for the Spring Parameters to Sweep
+% Here we choose only a subset for demonstration.
+p1_range    = linspace(0.1, 0.5, 5);    % L spring1 (m)
+p2_range    = p1_range;                 % Let spring2 be similar (can be swept independently)
+l1o_range   = linspace(0.1, 0.5, 5);      % Rest length of spring 1 (m)
+l2o_range   = l1o_range;                % Rest length of spring 2 (m)
+a_range     = linspace(0.02, 0.05, 5);    % Attachment point on left side (m)
+b_range     = a_range;                  % Attachment point on right side (m)
+Q1_range    = linspace(0, -0.1, 5);       % Fixed bottom attachment for spring 1 (from 0 to -0.1 m)
+Q2_range    = linspace(D, D+0.1, 5);      % Fixed bottom attachment for spring 2 (from D to D+0.1 m)
 
-p1_range = [0.1, 0.5];       % L spring1 (m)
-q1_range = [0.05, 0.2];       % W spring1 (m)
-r1_range = [0.01, 0.05];      % H spring1 (m)
+%% Equilibrium Target Conditions and Tolerances
+% We want:
+%   For τ_const = 0, equilibrium near θ = 0 rad.
+%   For τ_const = -1, equilibrium near θ = π/2 rad.
+tol_eq_low = 0.1;    % tolerance for equilibrium near 0 (in rad)
+tol_eq_high = 0.1;   % tolerance for equilibrium near π/2 (in rad)
 
-p2_range = [0.1, 0.5];        % L spring2 (m)
-q2_range = [0.05, 0.2];       % W spring2 (m)
-r2_range = [0.01, 0.05];      % H spring2 (m)
-
-l1_o_range = [0.1, 0.5];      % Rest length of spring 1 (m)
-l2_o_range = [0.1, 0.5];      % Rest length of spring 2 (m)
-
-%% Set Targets and Tolerances for Equilibrium
-target_theta_0 = 0;         % target for tau_const = 0 [rad]
-target_theta_90 = pi/2;     % target for tau_const = -1 [rad]
-tol0 = 0.1;   % tolerance in radians around target 0 equilibrium
-tol90 = 0.2;  % tolerance in radians around target 90 deg equilibrium
-
-%% Prepare to store results
-% We will store: p1, q1, r1, p2, q2, r2, l1_o, l2_o, theta_eq1, theta_eq2, err0, err90.
+%% Preallocate a results array to save matching parameter sets
+% We'll store: [p1, l1_o, a, Q1, p2, l2_o, b, Q2, theta_eq1, theta_eq2]
 results = [];
-count = 0;
 
-%% Parameter Sweep Loops (Nested Loops)
+%% Parameter Sweep Loop
+fprintf('Starting parameter sweep...\n');
 for p1 = p1_range
-    for q1 = q1_range
-        for r1 = r1_range
-            for p2 = p2_range
-                for q2 = q2_range
-                    for r2 = r2_range
-                        for l1_o = l1_o_range
-                            for l2_o = l2_o_range
-                                % Compute spring stiffnesses
-                                k1 = E * q1 * r1 / p1;  % Spring 1 stiffness (N/m)
-                                k2 = E * q2 * r2 / p2;  % Spring 2 stiffness (N/m)
-                                
-                                % Define modular functions for spring lengths and their derivatives
+    for p2 = p2_range
+        % Compute stiffness for each spring (they will be recalculated once we choose p1 and p2)
+        k1 = E * q1 * r1 / p1;
+        k2 = E * q2 * r2 / p2;
+        for l1_o = l1o_range
+            for l2_o = l2o_range
+                for a = a_range
+                    for b = b_range
+                        for Q1 = Q1_range
+                            for Q2 = Q2_range
+                                % Define the modular functions for spring 1 and spring 2 given current parameters:
                                 l1_fun = @(theta) sqrt((a * sin(theta))^2 + (a * cos(theta) + Q1)^2);
                                 dl1_fun = @(theta) (a * cos(theta) + Q1) / l1_fun(theta);
                                 
                                 l2_fun = @(theta) sqrt((b * sin(theta))^2 + ((Q2 - T) + b * cos(theta))^2);
                                 dl2_fun = @(theta) ((Q2 - T) + b * cos(theta)) / l2_fun(theta);
                                 
-                                % Define constant torques for equilibrium search:
-                                tau_const1 = 0;    % For equilibrium near theta = 0
-                                tau_const2 = -1;   % For equilibrium near theta = 90 deg
-                                
-                                % Use fzero to find equilibrium angles:
-                                % Initial guesses: 0 for the zero-torque condition,
-                                % and pi/2 for the -1 torque condition.
+                                % Find equilibrium for tau_const = 0 (target: theta near 0)
                                 try
-                                    theta_eq1 = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_o, l2_o, ...
-                                        l1_fun, dl1_fun, l2_fun, dl2_fun, tau_const1), 0);
+                                    theta_eq1 = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_o, l2_o, l1_fun, dl1_fun, l2_fun, dl2_fun, 0), 0);
                                 catch
                                     theta_eq1 = NaN;
                                 end
+                                % Find equilibrium for tau_const = -1 (target: theta near pi/2)
                                 try
-                                    theta_eq2 = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_o, l2_o, ...
-                                        l1_fun, dl1_fun, l2_fun, dl2_fun, tau_const2), pi/2);
+                                    theta_eq2 = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_o, l2_o, l1_fun, dl1_fun, l2_fun, dl2_fun, -1), pi/2);
                                 catch
                                     theta_eq2 = NaN;
                                 end
                                 
-                                % Calculate errors relative to targets
-                                err0 = abs(theta_eq1 - target_theta_0);
-                                err90 = abs(theta_eq2 - target_theta_90);
+                                % Check if both solutions are real numbers and meet the targets.
+                                % For tau_const = 0, we want |theta_eq1| < tol_eq_low.
+                                % For tau_const = -1, we want |theta_eq2 - (pi/2)| < tol_eq_high.
+                                if ~isnan(theta_eq1) && ~isnan(theta_eq2)
+                                    if abs(theta_eq1) < tol_eq_low && abs(theta_eq2 - (pi/2)) < tol_eq_high
+                                        % Store the current parameter combination and the equilibrium values.
+                                        results = [results; p1, l1_o, a, Q1, p2, l2_o, b, Q2, theta_eq1, theta_eq2];
+                                        fprintf('Match found: p1=%.3f, l1_o=%.3f, a=%.3f, Q1=%.3f, p2=%.3f, l2_o=%.3f, b=%.3f, Q2=%.3f, theta_eq1=%.3f, theta_eq2=%.3f\n',...
+                                            p1, l1_o, a, Q1, p2, l2_o, b, Q2, theta_eq1, theta_eq2);
+                                    end
+                                end
                                 
-                                count = count + 1;
-                                results(count,:) = [p1, q1, r1, p2, q2, r2, l1_o, l2_o, theta_eq1, theta_eq2, err0, err90];
                             end
                         end
                     end
@@ -103,37 +94,27 @@ for p1 = p1_range
     end
 end
 
-%% Convert Results to Table and Display
-% Define variable names for clarity
-varNames = {'p1','q1','r1','p2','q2','r2','l1_o','l2_o','theta_eq_tau0','theta_eq_tauNeg1','err0','err90'};
-resultsTable = array2table(results, 'VariableNames', varNames);
-
-% Display full table (or you can filter for the best candidates)
-disp('Full Sweep Results:');
-disp(resultsTable);
-
-%% Optionally, filter results that meet the target tolerances
-sel = results(results(:,11) < tol0 & results(:,12) < tol90, :);
-if ~isempty(sel)
-    disp('Parameter combinations meeting the target equilibria conditions (within tolerance):');
-    selTable = array2table(sel, 'VariableNames', varNames);
-    disp(selTable);
+%% Display final results
+if isempty(results)
+    disp('No parameter combination met the desired criteria.');
 else
-    disp('No parameter combination met the target conditions within the specified tolerances.');
+    disp('The following parameter combinations produced the targeted equilibria:');
+    % Columns: [p1, l1_o, a, Q1, p2, l2_o, b, Q2, theta_eq1, theta_eq2]
+    disp(results);
 end
 
-%% --- Local Function Definitions ---
+%% Local Function Definitions
 function netTorque = equilibrium_func(theta, k1, k2, l1_o, l2_o, l1_fun, dl1_fun, l2_fun, dl2_fun, tau_const)
-    % equilibrium_func computes the net torque (applied constant torque minus sum of spring torques)
-    % for the given configuration angle theta.
-    % Equilibrium is when netTorque == 0.
-    l1_val = l1_fun(theta);
-    l2_val = l2_fun(theta);
-    dl1_val = dl1_fun(theta);
-    dl2_val = dl2_fun(theta);
+    % Computes the net torque:
+    % netTorque = tau_const - (springForce1 + springForce2)
+    % An equilibrium is when netTorque = 0.
+    l1 = l1_fun(theta);
+    l2 = l2_fun(theta);
+    dl1 = dl1_fun(theta);
+    dl2 = dl2_fun(theta);
     
-    springForce1 = k1 * (l1_val - l1_o) * dl1_val;
-    springForce2 = k2 * (l2_val - l2_o) * dl2_val;
+    springForce1 = k1 * (l1 - l1_o) * dl1;
+    springForce2 = k2 * (l2 - l2_o) * dl2;
     
     netTorque = tau_const - (springForce1 + springForce2);
 end
