@@ -1,4 +1,5 @@
 %% Parameter Sweep for Spring and Attachment Parameters with Filtering
+%% THIS IS SUPER SLOW 
 % Clear workspace and command window
 clear;
 clc;
