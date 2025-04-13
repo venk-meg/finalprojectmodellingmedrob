@@ -42,9 +42,10 @@ l1_o = 0.02;    % Rest length of spring 1 (m)
 l2_o = 0.04;    % Rest length of spring 2 (m)
 
 % External (applied) torque (function of time)
- theta0 = deg2rad(0); tau = @(t) -75 * ((exp(-t))^((exp(t))^1000)) -0.5;
+% theta0 = deg2rad(0); tau = @(t) -75 * ((exp(-t))^((exp(t))^1000)) -0.5;
 % theta0 = deg2rad(90); tau = @(t) 75 * ((exp(-t))^((exp(t))^1000));
-% tau = @(t) -1;
+% theta0 = deg2rad(0); tau = @(t) 0;
+ theta0 = deg2rad(90); tau = @(t) -0.5;
 
 % Damping coefficient
 c = 0.2;   % Adjust as needed
