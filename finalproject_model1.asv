@@ -18,7 +18,7 @@ a = 0.025;     % Distance from bottom-left pivot to spring 1 attachment (m)
 b = 0.05;     % Distance from bottom-right pivot to spring 2 attachment (m)
 
 % Fixed bottom attachment points for springs
-Q1 = -0.03;   % Spring 1 bottom attachment point (m)
+Q1 = -0.005;   % Spring 1 bottom attachment point (m)
 Q2 = D + 0.01; % Spring 2 bottom attachment point (m)
 
 % Spring geometry parameters (for stiffness calculation)
@@ -39,7 +39,7 @@ k2 = 2 * E * q2 * r2 / p2;   % Spring 2 stiffness (N/m)
 
 % Rest lengths for springs
 l1_o = 0.02;    % Rest length of spring 1 (m)
-l2_o = 0.01;    % Rest length of spring 2 (m)
+l2_o = 0.05;    % Rest length of spring 2 (m)
 
 % External (applied) torque (function of time)
 %tau = @(t) -100 * ((exp(-t))^((exp(t))^1000)) -1;

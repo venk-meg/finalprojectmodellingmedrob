@@ -18,13 +18,13 @@ a = 0.025;     % Distance from bottom-left pivot to spring 1 attachment (m)
 b = 0.05;     % Distance from bottom-right pivot to spring 2 attachment (m)
 
 % Fixed bottom attachment points for springs
-Q1 = -0.03;   % Spring 1 bottom attachment point (m)
+Q1 = -0.01;   % Spring 1 bottom attachment point (m)
 Q2 = D + 0.01; % Spring 2 bottom attachment point (m)
 
 % Spring geometry parameters (for stiffness calculation)
 
 p1 = sqrt(a^2 + Q1^2)    % L spring1 (m)
-q1 = 0.01;   % W spring1 (m)
+q1 = 0.015;   % W spring1 (m)
 r1 = 0.003;   % H spring1 (m)
 
 p2 = sqrt(b^2 + (Q2-D)^2)  % L spring2 (m)
@@ -39,18 +39,18 @@ k2 = 2 * E * q2 * r2 / p2;   % Spring 2 stiffness (N/m)
 
 % Rest lengths for springs
 l1_o = 0.02;    % Rest length of spring 1 (m)
-l2_o = 0.01;    % Rest length of spring 2 (m)
+l2_o = 0.04;    % Rest length of spring 2 (m)
 
 % External (applied) torque (function of time)
-%tau = @(t) -100 * ((exp(-t))^((exp(t))^1000)) -1;
-%tau = @(t) 80 * ((exp(-t))^((exp(t))^1000));
-tau = @(t) -0;
+ theta0 = deg2rad(0); tau = @(t) -75 * ((exp(-t))^((exp(t))^1000)) -0.5;
+% theta0 = deg2rad(90); tau = @(t) 75 * ((exp(-t))^((exp(t))^1000));
+% tau = @(t) -1;
 
 % Damping coefficient
 c = 0.2;   % Adjust as needed
 
 % Initial conditions: [theta, theta_dot]
-theta0 = deg2rad(0);  % Initial angle (rad)
+%theta0 = deg2rad(70);  % Initial angle (rad)
 theta_dot0 = 0;        % Initial angular velocity (rad/s)
 initial_conditions = [theta0; theta_dot0];
 
@@ -65,13 +65,13 @@ t_span = [0, 0.5];
 % 1) Target equilibrium near theta = 0 with tau_const = 0.
 % 2) Target equilibrium near theta = 90° (pi/2 rad) with tau_const = -1.
 tau_const1 = 0;
-tau_const2 = -1;
+tau_const2 = -0.5;
 
 theta_eq1 = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, tau_const1), 0);
 theta_eq2 = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, tau_const2), pi/2);
 
 disp(['Equilibrium for tau_const = 0 (target near theta = 0): ', num2str(theta_eq1), ' rad, ', num2str(rad2deg(theta_eq1)), ' deg']);
-disp(['Equilibrium for tau_const = -1 (target near theta = 90 deg): ', num2str(theta_eq2), ' rad, ', num2str(rad2deg(theta_eq2)), ' deg']);
+disp(['Equilibrium for tau_const = -0.5 (target near theta = 90 deg): ', num2str(theta_eq2), ' rad, ', num2str(rad2deg(theta_eq2)), ' deg']);
 
 %% (Optional) Fancy Chart: Time-Series Plots
 figure;
