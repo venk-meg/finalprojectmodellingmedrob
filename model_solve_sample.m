@@ -11,22 +11,22 @@ D = T;           % Distance between pivots (m)
 %% Define Ranges for Spring Parameters
 % For demonstration, we use two values for each parameter (expand as needed)
 
-Q_1_vals = [-0.015, -0.03, -0.04, -0.05];     
-Q_2_vals = [D + 0.015, D + 0.03, D + 0.04, D+ 0.04]; 
+Q_1_vals = [-0.03];     
+Q_2_vals = [D + 0.03]; 
 
-p1_vals = [0.01, 0.02, 0.03, 0.04, 0.05];      % L spring1 (m)
-q1_vals = [0.005, 0.01, 0.015, 0.02];     % W spring1 (m)
-r1_vals = [0.001, 0.002, 0.003, 0.004, 0.005];    % H spring1 (m)
+p1_vals = [0.01,0.03, 0.05];      % L spring1 (m)
+q1_vals = [0.01, 0.02];     % W spring1 (m)
+r1_vals = [0.001, 0.003, 0.005];    % H spring1 (m)
 
-p2_vals = [0.01, 0.02, 0.03, 0.04, 0.05];      % L spring2 (m)
-q2_vals = [0.005, 0.01, 0.015, 0.02];     % W spring2 (m)
-r2_vals = [0.001, 0.002, 0.003, 0.004, 0.005];   % H spring2 (m)
+p2_vals = p1_vals;     % L spring2 (m)
+q2_vals = q1_vals;     % W spring2 (m)
+r2_vals = r1_vals;      % H spring2 (m)
 
-l1_o_vals = [0.01, 0.02, 0.03, 0.04, 0.05];    % Rest length of spring 1 (m)
+l1_o_vals = [0.01, 0.03, 0.05];    % Rest length of spring 1 (m)
 l2_o_vals = l1_o_vals;    % Rest length of spring 2 (m)
 
-a_vals = [0.01, 0.02, 0.03, 0.04, 0.05];     % Distance from left pivot to spring 1 attachment (m)
-b_vals = [0.01, 0.02, 0.03, 0.04, 0.05];     % Distance from right pivot to spring 2 attachment (m)
+a_vals = [0.01, 0.03, 0.05];     % Distance from left pivot to spring 1 attachment (m)
+b_vals = a_vals;     % Distance from right pivot to spring 2 attachment (m)
 
 %% Initialize Results Storage
 % Columns: [p1, q1, r1, p2, q2, r2, l1_o, l2_o, a, b, ...

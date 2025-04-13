@@ -11,12 +11,12 @@ D = T;           % Distance between pivots (m)
 %% Define Ranges for Spring Parameters
 % For demonstration, we use two values for each parameter (expand as needed)
 
-Q_1_vals = [-0.015, -0.03, -0.04, -0.05];     
-Q_2_vals = [D + 0.015, D + 0.03, D + 0.04, D+ 0.04]; 
+Q_1_vals = [-0.015, -0.03];     
+Q_2_vals = [D + 0.015, D + 0.03]; 
 
-p1_vals = [0.01, 0.02, 0.03, 0.04, 0.05];      % L spring1 (m)
-q1_vals = [0.005, 0.01, 0.015, 0.02];     % W spring1 (m)
-r1_vals = [0.001, 0.002, 0.003, 0.004, 0.005];    % H spring1 (m)
+p1_vals = [0.01,0.03, 0.05];      % L spring1 (m)
+q1_vals = [0.01, 0.02];     % W spring1 (m)
+r1_vals = [0.001, 0.003, 0.005];    % H spring1 (m)
 
 p2_vals = [0.01, 0.02, 0.03, 0.04, 0.05];      % L spring2 (m)
 q2_vals = [0.005, 0.01, 0.015, 0.02];     % W spring2 (m)
