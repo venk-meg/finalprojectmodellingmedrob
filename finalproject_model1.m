@@ -13,6 +13,7 @@ w_t = 0.0108;               % Width of top link (m)
 m_s = PLA_den * w_s * S;    % Mass of each side link (kg)
 m_t = PLA_den * w_t * T;    % Mass of the top link (kg)
 
+%{
 % Attachment points along the side links
 a = 0.025;     % Distance from bottom-left pivot to spring 1 attachment (m)
 b = 0.05;     % Distance from bottom-right pivot to spring 2 attachment (m)
@@ -41,11 +42,43 @@ k2 = 2 * E * q2 * r2 / p2;   % Spring 2 stiffness (N/m)
 l1_o = 0.02;    % Rest length of spring 1 (m)
 l2_o = 0.04;    % Rest length of spring 2 (m)
 
+%}
+
+
+
+% Attachment points along the side links
+a = 0.025;     % Distance from bottom-left pivot to spring 1 attachment (m)
+b = 0.04;     % Distance from bottom-right pivot to spring 2 attachment (m)
+
+% Fixed bottom attachment points for springs
+Q1 = -0.02;   % Spring 1 bottom attachment point (m)
+Q2 = D + 0.02; % Spring 2 bottom attachment point (m)
+
+% Spring geometry parameters (for stiffness calculation)
+
+p1 = sqrt(a^2 + Q1^2)    % L spring1 (m)
+q1 = 0.015;   % W spring1 (m)
+r1 = 0.003;   % H spring1 (m)
+
+p2 = sqrt(b^2 + (Q2-D)^2)  % L spring2 (m)
+q2 = 0.01;   % W spring2 (m)
+r2 = 0.002;   % H spring2 (m)
+
+E = 55158;   % Elastic modulus (N/m)
+
+% Compute spring stiffnesses
+k1 = 2 * E * q1 * r1 / p1;   % Spring 1 stiffness (N/m)
+k2 = 2 * E * q2 * r2 / p2;   % Spring 2 stiffness (N/m)
+
+% Rest lengths for springs
+l1_o = 0.018;    % Rest length of spring 1 (m)
+l2_o = 0.03;    % Rest length of spring 2 (m)
+
 % External (applied) torque (function of time)
 % theta0 = deg2rad(0); tau = @(t) -75 * ((exp(-t))^((exp(t))^1000)) -0.5;
 % theta0 = deg2rad(90); tau = @(t) 75 * ((exp(-t))^((exp(t))^1000));
-% theta0 = deg2rad(0); tau = @(t) 0;
- theta0 = deg2rad(90); tau = @(t) -0.5;
+ theta0 = deg2rad(-10); tau = @(t) 0;
+% theta0 = deg2rad(90); tau = @(t) -0.5;
 
 % Damping coefficient
 c = 0.2;   % Adjust as needed

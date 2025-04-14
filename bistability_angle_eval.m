@@ -13,63 +13,37 @@ w_t = 0.0108;               % Width of top link (m)
 m_s = PLA_den * w_s * S;    % Mass of each side link (kg)
 m_t = PLA_den * w_t * T;    % Mass of the top link (kg)
 
-%{
 % Attachment points along the side links
-a = 0.025;     % Distance from bottom-left pivot to spring 1 attachment (m)
-b = 0.05;      % Distance from bottom-right pivot to spring 2 attachment (m)
+a = 0.05;     % Distance from bottom-left pivot to spring 1 attachment (m)
+b = 0.02;     % Distance from bottom-right pivot to spring 2 attachment (m)
 
 % Fixed bottom attachment points for springs
-Q1 = -0.01;   % Spring 1 bottom attachment point (m)
-Q2 = D + 0.01; % Spring 2 bottom attachment point (m)
+Q1 = -0.02;   % Spring 1 bottom attachment point (m)
+Q2 = D + 0.00; % Spring 2 bottom attachment point (m) 
+
+
+% Rest lengths for springs
+l1_o = 0.05;    % Rest length of spring 1 (m)
+l2_o = 0.01;    % Rest length of spring 2 (m)
 
 % Spring geometry parameters (for stiffness calculation)
-p1 = sqrt(a^2 + Q1^2);    % L spring1 (m)
-q1 = 0.015;   % W spring1 (m)
-r1 = 0.003;   % H spring1 (m)
 
-p2 = sqrt(b^2 + (Q2-D)^2);  % L spring2 (m)
+p1 = sqrt(a^2 + Q1^2)    % L spring1 (m)
+q1 = 0.015;   % W spring1 (m)
+r1 = 0.004;   % H spring1 (m)
+
+p2 = sqrt(b^2 + (Q2-D)^2)  % L spring2 (m)
 q2 = 0.01;   % W spring2 (m)
 r2 = 0.002;   % H spring2 (m)
 
-E = 55158;   % Elastic modulus (N/m)
+E = 45000;   % Elastic modulus (N/m)
 
 % Compute spring stiffnesses
 k1 = 2 * E * q1 * r1 / p1;   % Spring 1 stiffness (N/m)
 k2 = 2 * E * q2 * r2 / p2;   % Spring 2 stiffness (N/m)
 
-% Rest lengths for springs
-l1_o = 0.02;    % Rest length of spring 1 (m)
-l2_o = 0.04;    % Rest length of spring 2 (m)
-%}
-
-% Attachment points along the side links
-a = 0.015;
-b = 0.05;
-
-% Set rest lengths and choose Q1 and Q2 so that at θ = 0 the springs are relaxed:
-l1_o = 0.015;    
-l2_o = 0.025;    
-Q1 = l1_o - a          % Q1 = 0.01 - 0.025 = -0.015
-Q2 = l2_o - b + T       % Q2 = 0.02 - 0.05 + 0.085 = 0.055
-
-% Spring geometry parameters (for stiffness calculation)
-p1 = sqrt(a^2 + Q1^2);    % ≈ 0.02915 m
-q1 = 0.01;             
-r1 = 0.002;             
-
-p2 = sqrt(b^2 + (Q2-D)^2); % ≈ 0.05831 m (with D = T = 0.085)
-q2 = 0.007;              % increased to get larger k2
-r2 = 0.003;             
-
-E = 29051;   % Adjusted elastic modulus to get ~ -1 N.m at θ = 90° for τ_const = -1
-
-% Compute spring stiffnesses
-k1 = 2 * E * q1 * r1 / p1;   
-k2 = 2 * E * q2 * r2 / p2;   
-
 %% Time-series Simulation (for reference)
 % Here the external torque is defined as a constant.
-% (This portion is left in for comparison with the bistability analysis.)
 theta0 = deg2rad(90); 
 tau = @(t) -0.5;   % External torque
 theta_dot0 = 0;    % Initial angular velocity (rad/s)
@@ -88,8 +62,8 @@ tau_const2 = -0.5;
 theta_eq1 = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, tau_const1), 0);
 theta_eq2 = fzero(@(theta) equilibrium_func(theta, k1, k2, l1_o, l2_o, a, b, Q1, Q2, T, tau_const2), pi/2);
 
-disp(['Equilibrium for tau_const = 0 (target near theta = 0): ', num2str(theta_eq1), ' rad, ', num2str(rad2deg(theta_eq1)), ' deg']);
-disp(['Equilibrium for tau_const = -0.5 (target near theta = 90 deg): ', num2str(theta_eq2), ' rad, ', num2str(rad2deg(theta_eq2)), ' deg']);
+disp(['Equilibrium for tau_const = 0 (target near 25°): ', num2str(theta_eq1), ' rad, ', num2str(rad2deg(theta_eq1)), ' deg']);
+disp(['Equilibrium for tau_const = -0.5 (target near 90°): ', num2str(theta_eq2), ' rad, ', num2str(rad2deg(theta_eq2)), ' deg']);
 
 %% (Optional) Fancy Chart: Time-Series Plots
 figure;
@@ -129,12 +103,11 @@ xlabel('Time (s)');
 title('Spring Force 2 vs. Time');
 grid on;
 
-%% Bistability Analysis: Starting Angle vs. Equilibrium Angle
-% Evaluate the system response for various starting angles (with zero external torque)
+%% Bistability Analysis: Starting Angle vs. Equilibrium Angle (with τ = 0)
 tau_bistable = @(t) 0;  % Set external torque to zero for bistability evaluation
 
 % Define a range of starting angles (in degrees)
-starting_angles_deg = linspace(-20, 120, 30);
+starting_angles_deg = linspace(-20, 110, 100);
 final_equilibrium_deg = zeros(size(starting_angles_deg));
 
 % Extend simulation time to allow the system to settle
